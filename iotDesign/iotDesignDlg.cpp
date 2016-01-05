@@ -4,7 +4,10 @@
 #include "stdafx.h"
 #include "iotDesign.h"
 #include "iotDesignDlg.h"
-
+#include "windows.h"
+#include "stdio.h"
+#include <afxinet.h>
+#include <afx.h>
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -12,6 +15,7 @@
 UINT RFIDThread(LPVOID pParam);
 UINT TestThread(LPVOID pParam);
 UINT ZigBeeThread(LPVOID pParam);
+BOOL send_message(CString ID);
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -158,19 +162,22 @@ void CiotDesignDlg::OnBnClickedButton1()
 	// TODO: 在此添加控件通知处理程序代码
 	if (SerialManager1.Open(1, 115200))
 	{
-		AfxBeginThread(RFIDThread, (LPVOID)this);
-	}
-	else
-		MessageBox(_T("Failed to open the port1!"), _T("Error"));
-	SerialManager2.Close();
-	AfxBeginThread(TestThread, (LPVOID)this);
-	if (SerialManager2.Open(2, 115200))
-	{
+		AfxBeginThread(ZigBeeThread, (LPVOID)this);
 		
 	}
 	else
+		MessageBox(_T("Failed to open the port1!"), _T("Error"));
+	// SerialManager2.Close();
+
+	if (SerialManager2.Open(2, 115200))
+	{
+		AfxBeginThread(RFIDThread, (LPVOID)this);
+	}
+	else
 		MessageBox(_T("Failed to open the port2!"), _T("Error"));
-	SerialManager2.Close();
+	// SerialManager2.Close();
+	// AfxBeginThread(TestThread, (LPVOID)this);
+
 }
 
 
@@ -195,16 +202,78 @@ void CiotDesignDlg::OnBnClickedButton1()
 UINT RFIDThread(LPVOID pParam)
 {
 	CiotDesignDlg *pDlg = (CiotDesignDlg*)pParam;
-	char* lpBuffer = new char[500];
-	int nBytesRead = pDlg->SerialManager1.Read(lpBuffer, 500);
-	LPCTSTR text = LPCTSTR(lpBuffer);
-	pDlg->SetDlgItemText(IDC_EDIT1, text);
-	delete []lpBuffer;
+
+	char* lpBuffer2 = new char[500];
+	while(true)
+	{
+		int nBytesRead = pDlg->SerialManager2.Read(lpBuffer2, 500);
+			
+		CString str1(lpBuffer2,34);
+		str1.SetAt(29, '\0');
+		CString str2 = str1.Mid(19,29);
+		// str2.SetAt(28, '\0');
+		pDlg->SetDlgItemText(IDC_EDIT1, str2);
+		// send_message(str2);
+	}
+	delete []lpBuffer2;
 	return 0;
 }
-
+/*
 UINT TestThread(LPVOID pParam)
 {
 	AfxMessageBox("hello", MB_OK);
+
 	return 0;
+}
+*/
+UINT ZigBeeThread(LPVOID pParam)
+{
+	CiotDesignDlg *pDlg = (CiotDesignDlg*)pParam;
+	char* lpBuffer1 = new char[500];
+	while(true)
+	{
+		int nBytesRead = pDlg->SerialManager1.Read(lpBuffer1, 500);	
+
+		char ctemp[500];
+		for (int i=0; i<nBytesRead; ++i){
+			if(lpBuffer1[i] == 0)
+				lpBuffer1[i] = '1';
+			ctemp[i] = lpBuffer1[i];
+		}
+		char c16temp[500];
+		sprintf(c16temp, "%x", ctemp);
+		CString str1(c16temp, nBytesRead);
+
+		pDlg->SetDlgItemText(IDC_EDIT1, str1);
+		// send_message(str2);
+	
+	}
+	delete []lpBuffer1;
+	return 0;
+}
+
+BOOL send_message(CString ID)
+{
+	CString strHeaders =
+      _T("Content-Type: application/x-www-form-urlencoded");
+
+   // URL-encoded form variables -
+   // name = "John Doe", userid = "hithere", other = "P&Q"
+   CString strFormData = _T("appid=10586&to=18651370755&project=nbMH84&signature=8202eb5e44a5519cd0b989a696a60cec");
+   strFormData.Append("&vars={\"name\":\"");
+   strFormData.Append(ID);
+   strFormData.Append("\",\"time\":\"");
+   CString strTime;
+   CTime currentTime = CTime::GetCurrentTime();
+   strTime = currentTime.Format("%Y/%m/%d/%X");
+   strFormData.Append(strTime);
+   strFormData.Append("\"}");
+   CInternetSession session;
+   CHttpConnection* pConnection = session.GetHttpConnection(_T("api.submail.cn"));
+   CHttpFile* pFile =
+      pConnection->OpenRequest(CHttpConnection::HTTP_VERB_POST,
+                              _T("message/xsend.json"));
+   BOOL result = pFile->SendRequest(strHeaders,
+      (LPVOID)(LPCTSTR)strFormData, strFormData.GetLength());
+   return true;
 }
