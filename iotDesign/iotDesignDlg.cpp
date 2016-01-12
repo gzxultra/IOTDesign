@@ -1,4 +1,4 @@
-// iotDesignDlg.cpp : 实现文件
+	// iotDesignDlg.cpp : 实现文件
 //
 
 #include "stdafx.h"
@@ -162,12 +162,10 @@ void CiotDesignDlg::OnBnClickedButton1()
 	// TODO: 在此添加控件通知处理程序代码
 	if (SerialManager1.Open(1, 115200))
 	{
-		AfxBeginThread(ZigBeeThread, (LPVOID)this);
-		
+		AfxBeginThread(ZigBeeThread, (LPVOID)this)；
 	}
 	else
 		MessageBox(_T("Failed to open the port1!"), _T("Error"));
-	// SerialManager2.Close();
 
 	if (SerialManager2.Open(2, 115200))
 	{
@@ -175,9 +173,6 @@ void CiotDesignDlg::OnBnClickedButton1()
 	}
 	else
 		MessageBox(_T("Failed to open the port2!"), _T("Error"));
-	// SerialManager2.Close();
-	// AfxBeginThread(TestThread, (LPVOID)this);
-
 }
 
 
@@ -228,7 +223,7 @@ UINT TestThread(LPVOID pParam)
 */
 UINT ZigBeeThread(LPVOID pParam)
 {
-	CiotDesignDlg *pDlg = (CiotDesignDlg*)pParam;
+	CiotDesignDlg *pDlg = (CiotDesignDlg*)	;
 	char* lpBuffer1 = new char[500];
 	while(true)
 	{
@@ -246,7 +241,6 @@ UINT ZigBeeThread(LPVOID pParam)
 
 		pDlg->SetDlgItemText(IDC_EDIT1, str1);
 		// send_message(str2);
-	
 	}
 	delete []lpBuffer1;
 	return 0;
@@ -259,7 +253,8 @@ BOOL send_message(CString ID)
 
    // URL-encoded form variables -
    // name = "John Doe", userid = "hithere", other = "P&Q"
-   CString strFormData = _T("appid=10586&to=18651370755&project=nbMH84&signature=8202eb5e44a5519cd0b989a696a60cec");
+   CString strFormData = _T("appid=10586&to=18651370755 \
+   	&project=nbMH84&signature=8202eb5e44a5519cd0b989a696a60cec");
    strFormData.Append("&vars={\"name\":\"");
    strFormData.Append(ID);
    strFormData.Append("\",\"time\":\"");
